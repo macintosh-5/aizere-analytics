@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+deploy_to_github.ps1
+*token*
+*.zip
+check_sheet.py
+check_sheet.ps1
+check_sheet.js
+content.md
