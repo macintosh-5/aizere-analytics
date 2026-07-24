@@ -33,7 +33,7 @@ window.onerror = function(message, source, lineno, colno, error) {
 
 /**
  * Aizere AI Analytics Dashboard - Main Logic Application File (Daily Multi-Tab Update)
- * Fetches all 16 date worksheets in parallel, aggregates daily stats into 4 grouped categories,
+ * Fetches all known date worksheets in parallel, aggregates daily stats into 4 grouped categories,
  * and redraws the Tableau/Power BI level stacked charts and tables.
  */
 
@@ -44,8 +44,60 @@ const state = {
     lastUpdate: null,
     sheetBaseUrl: 'https://docs.google.com/spreadsheets/d/1FYH5YlD8N_BB_4KMnYEmjEMEB9OLmmJFUZznQ2Cbzxo/gviz/tq?tqx=out:json',
     
-    // GID mappings for all 16 date worksheets
+    // Known date worksheets (DD.MM.YYYY tab names). GID is optional now —
+    // the static/GitHub Pages build fetches by sheet NAME (see refreshData),
+    // so new day-tabs just need to be added here by date, no GID lookup needed.
     sheetTabs: [
+        { date: "19.05.2026", gid: "851698948" },
+        { date: "20.05.2026", gid: "21350203" },
+        { date: "21.05.2026", gid: "498979866" },
+        { date: "22.05.2026", gid: "675236569" },
+        { date: "25.05.2026", gid: "1581252793" },
+        { date: "26.05.2026", gid: "34271995" },
+        { date: "28.05.2026", gid: "1530855760" },
+        { date: "29.05.2026", gid: "1378170513" },
+        { date: "30.05.2026", gid: "380380491" },
+        { date: "01.06.2026", gid: "1194373538" },
+        { date: "02.06.2026", gid: "972892403" },
+        { date: "03.06.2026", gid: "1656038899" },
+        { date: "04.06.2026", gid: "1546018041" },
+        { date: "05.06.2026", gid: "1227867319" },
+        { date: "08.06.2026", gid: "522293399" },
+        { date: "09.06.2026", gid: "1250378660" },
+        { date: "10.06.2026", gid: null },
+        { date: "11.06.2026", gid: null },
+        { date: "12.06.2026", gid: null },
+        { date: "13.06.2026", gid: null },
+        { date: "14.06.2026", gid: null },
+        { date: "15.06.2026", gid: null },
+        { date: "16.06.2026", gid: null },
+        { date: "17.06.2026", gid: null },
+        { date: "18.06.2026", gid: null },
+        { date: "19.06.2026", gid: null },
+        { date: "22.06.2026", gid: null },
+        { date: "23.06.2026", gid: null },
+        { date: "24.06.2026", gid: null },
+        { date: "25.06.2026", gid: null },
+        { date: "26.06.2026", gid: null },
+        { date: "29.06.2026", gid: null },
+        { date: "30.06.2026", gid: null },
+        { date: "01.07.2026", gid: null },
+        { date: "02.07.2026", gid: null },
+        { date: "03.07.2026", gid: null },
+        { date: "07.07.2026", gid: null },
+        { date: "08.07.2026", gid: null },
+        { date: "09.07.2026", gid: null },
+        { date: "10.07.2026", gid: null },
+        { date: "13.07.2026", gid: null },
+        { date: "14.07.2026", gid: null },
+        { date: "15.07.2026", gid: null },
+        { date: "16.07.2026", gid: null },
+        { date: "17.07.2026", gid: null },
+        { date: "20.07.2026", gid: null },
+        { date: "21.07.2026", gid: null },
+        { date: "22.07.2026", gid: null },
+        { date: "23.07.2026", gid: null },
+        { date: "24.07.2026", gid: "799755224" }
     ],
 
     dailyStats: [], // Aggregated summary statistics for all 16 dates
@@ -355,12 +407,15 @@ async function refreshData() {
             // Fetch all tabs in parallel using JSONP via dynamic script tags
             const fetchPromises = state.sheetTabs.map((tab) => {
                 return new Promise((resolve, reject) => {
-                    const callbackName = `handleGoogleSheetResponse_${tab.gid}`;
+                    // Use the date string (sanitized) as the unique key instead of gid,
+                    // since gid is no longer required to fetch a tab.
+                    const safeKey = tab.date.replace(/\./g, "_");
+                    const callbackName = `handleGoogleSheetResponse_${safeKey}`;
                     
                     // Timeout to prevent hanging if network fails
                     const timeout = setTimeout(() => {
                         delete window[callbackName];
-                        const scriptEl = document.getElementById(`jsonp-script-${tab.gid}`);
+                        const scriptEl = document.getElementById(`jsonp-script-${safeKey}`);
                         if (scriptEl) scriptEl.remove();
                         reject(new Error(`Превышено время ожидания для ${tab.date}`));
                     }, 15000);
@@ -368,7 +423,7 @@ async function refreshData() {
                     window[callbackName] = function(response) {
                         clearTimeout(timeout);
                         delete window[callbackName];
-                        const scriptEl = document.getElementById(`jsonp-script-${tab.gid}`);
+                        const scriptEl = document.getElementById(`jsonp-script-${safeKey}`);
                         if (scriptEl) scriptEl.remove();
                         
                         if (response && response.status === 'ok') {
@@ -379,8 +434,10 @@ async function refreshData() {
                     };
                     
                     const script = document.createElement('script');
-                    script.id = `jsonp-script-${tab.gid}`;
-                    script.src = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=responseHandler:${callbackName}&gid=${tab.gid}`;
+                    script.id = `jsonp-script-${safeKey}`;
+                    // Query by sheet NAME (the tab is literally titled "DD.MM.YYYY"), so this
+                    // keeps working for any future date tab without ever needing its gid.
+                    script.src = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=responseHandler:${callbackName}&sheet=${encodeURIComponent(tab.date)}`;
                     script.onerror = () => {
                         clearTimeout(timeout);
                         delete window[callbackName];
