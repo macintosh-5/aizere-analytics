@@ -662,7 +662,7 @@ function processAllDaysData(results) {
         }
         
         // 5. Read totalCalls
-        let totalCalls = 1000; // default fallback
+        let totalCalls = 0; // no fallback fabrication — 0 means this day's total wasn't filled in the sheet yet
         if (totalCallsColIdx !== -1) {
             let val = null;
             if (countRowIndex !== -1 && rows[countRowIndex] && rows[countRowIndex].c[totalCallsColIdx]) {
@@ -680,7 +680,7 @@ function processAllDaysData(results) {
                 }
             }
             if (val !== null && val !== undefined) {
-                totalCalls = parseInt(val.toString().replace(/\s/g, '')) || 1000;
+                totalCalls = parseInt(val.toString().replace(/\s/g, '')) || 0;
             }
         }
         
