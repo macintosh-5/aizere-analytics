@@ -734,6 +734,13 @@ function processAllDaysData(results) {
             totalChecked = uniqueIdsInSheet.size;
         }
         
+        // Newer-format day tabs don't have a separate "Общее количество звоноков"
+        // column — the "Тотал" column (sum of all category counts) IS the day's
+        // total call count. Use it instead of leaving totalCalls at 0.
+        if (totalCalls === 0 && totalChecked > 0) {
+            totalCalls = totalChecked;
+        }
+        
         // Initialize daily summary counters
         let robotSuccessCount = 0;
         let aiErrorCount = 0;
